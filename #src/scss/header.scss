@@ -1,0 +1,49 @@
+.icon-menu {
+	display: none;
+	&__item {
+		display: none;
+	}
+	@media (max-width: 836px) {
+		display: block;
+		&__item {
+			display: block;
+			position: relative;
+			max-width: 30px;
+			height: 18px;
+			cursor: pointer;
+			z-index: 21;
+			left: -50px;
+
+			span {
+				@include anim(0.3s, 0s);
+				top: 8px;
+				left: 0;
+				position: absolute;
+				width: 100%;
+				height: 2px;
+				background-color: #fff;
+				&:first-child {
+					top: 0;
+				}
+				&:last-child {
+					top: auto;
+					bottom: 0;
+				}
+			}
+			&.active {
+				span {
+					background-color: #fff;
+					@include scale(0);
+					&:first-child {
+						@include rotate(-45deg);
+						top: 8px;
+					}
+					&:last-child {
+						@include rotate(45deg);
+						bottom: 8px;
+					}
+				}
+			}
+		}
+	}
+}
