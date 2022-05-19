@@ -32,5 +32,8 @@
         &:hover {
             transform: translateY(-5px);
         }
+        &.active {
+            transform: translateY(-5px);
+        }
     }
 }

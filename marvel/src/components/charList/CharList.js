@@ -1,148 +1,143 @@
-import React, { Component, createRef } from 'react';
-
-import Spinner from '../spinner/spinner';
-import MarvelService from '../../services/MarvelService';
-import ErrorMessage from '../errorMessage/errorMessage';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import PropTypes from 'prop-types';
+
+import Spinner from '../spinner/Spinner';
+import ErrorMessage from '../errorMessage/errorMessage';
+import useMarvelService from '../../services/MarvelService';
+
+import { CSSTransition, TransitionGroup, } from 'react-transition-group';
 
 import './charList.scss';
 
-class CharList extends Component {
-    state = {
-        chars: [],
-        loading: true,
-        error: false,
-        newItemLoading: false,
-        offset: 210,
-        charEnded: false,
-        charId: null
+const setContent = (process, Component, newItemLoading) => {
+    switch (process) {
+        case 'waiting':
+            return <Spinner />
+        case 'loading':
+            return newItemLoading ? <Component /> : <Spinner />
+        case 'confirmed':
+            return <Component />
+        case 'error':
+            return <ErrorMessage />;
+        default:
+            throw new Error('Unexpected process state');
+    }
+}
+
+const CharList = (props) => {
+    const [chars, setChars] = useState([]),
+        [newItemLoading, setNewItemLoading] = useState(false),
+        [offset, setOffset] = useState(210),
+        [charEnded, setCharEnded] = useState(false),
+        [charId, setCharId] = useState(null),
+        [selectedChar, setSelectedChar] = useState(null);
+
+    const { getAllCharacters, process, setProcess } = useMarvelService();
+
+    useEffect(() => onRequest(offset, true), []);
+
+    const onRequest = (offset, initial) => {
+
+
+        initial ? setNewItemLoading(false) : setNewItemLoading(true);
+        getAllCharacters(offset)
+            .then(onCharListLoaded)
+            .then(() => setProcess('confirmed'))
+            .then(() => {
+                if (selectedChar != null) {
+                    itemRefs.current[selectedChar].classList.add('char__item_selected');
+                    itemRefs.current[selectedChar].focus();
+                }
+            });
     }
 
-    marvelService = new MarvelService();
-
-    componentDidMount() {
-        this.onRequest();
-    }
-
-    onRequest = (offset) => {
-        this.onCharListLoading();
-        this.marvelService.getAllCharacters(offset)
-            .then(this.onCharListLoaded)
-            .catch(this.onError);
-
-    }
-
-    onCharListLoading = () => {
-        this.setState({
-            newItemLoading: true
-        })
-    }
-
-    onCharListLoaded = (newChars) => {
+    const onCharListLoaded = (newChars) => {
         let ended = false;
         if (newChars.length < 9) ended = true;
 
-        this.setState(({ offset, chars }) => ({
-            chars: [...chars, ...newChars],
-            loading: false,
-            newItemLoading: false,
-            offset: offset + 9,
-            charEnded: ended,
-
-        }));
+        setChars(charlist => [...chars, ...newChars]);
+        setNewItemLoading(false);
+        setOffset(offset => offset + 9);
+        setCharEnded(charEnded => ended);
     }
 
-    onError = () => {
-        this.setState({
-            error: true,
-            loading: false
-        })
+    const itemRefs = useRef([]);
+
+    const focusOnItem = (id) => {
+        itemRefs.current.forEach(item => item.classList.remove('char__item_selected'));
+        itemRefs.current[id].classList.add('char__item_selected');
+        itemRefs.current[id].focus();
     }
 
-    itemRefs = [];
+    function renderItems(arr) {
+        console.log('render');
 
-    setRef = (ref) => {
-        this.itemRefs.push(ref);
-    }
-
-    focusOnItem = (id) => {
-        this.itemRefs.forEach(item => item.classList.remove('char__item_selected'));
-        this.itemRefs[id].classList.add('char__item_selected');
-        this.itemRefs[id].focus();
-    }
-
-    renderItems(arr) {
+        let delay = 0;
+        let delayJump = 100;
         const items = arr.map((item, i) => {
             let imgStyle = { 'objectFit': 'cover' };
             if (item.thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg') {
                 imgStyle = { 'objectFit': 'unset' };
             }
-
+            if (delay >= 900) delay = 100
+            else delay += delayJump
             return (
-                <li
-                    // ${item.id == this.state.charId ? ' char__item_selected' : ''}
-                    className={`char__item`}
-                    ref={this.setRef}
-                    key={item.id}
-                    tabIndex={i + 1}
-                    onClick={
-                        () => {
-                            this.props.onCharSelected(item.id);
-                            this.focusOnItem(i);
-                            this.setState({
-                                charId: item.id
-                            })
-                        }
-                    }
-                    onKeyPress={
-                        (e) => {
-                            if (e.key == ' ' || e.key == 'Enter') {
-                                this.props.onCharSelected(item.id);
-                                this.focusOnItem(i);
-                                this.setState({
-                                    charId: item.id
-                                })
+                <CSSTransition
+                    timeout={100}
+                    classNames="char__item"
+                    key={i + 1}
+                >
+                    <li
+                        style={{ transition: `opacity 500ms ease ${delay}ms, transform 0.3s ease` }}
+                        className={`char__item`}
+                        ref={el => itemRefs.current[i] = el}
+                        tabIndex={i + 1}
+                        onClick={
+                            () => {
+                                props.onCharSelected(item.id);
+                                focusOnItem(i);
+                                setCharId(item.id);
+                                setSelectedChar(i);
                             }
                         }
-                    }>
-                    <img src={item.thumbnail} alt={item.name} style={imgStyle} />
-                    <div className="char__name">{item.name}</div>
-                </li>
+                        onKeyPress={
+                            (e) => {
+                                if (e.key == ' ' || e.key == 'Enter') {
+                                    props.onCharSelected(item.id);
+                                    focusOnItem(i);
+                                    setCharId(item.id);
+                                }
+                            }
+                        }>
+                        <img src={item.thumbnail} alt={item.name} style={imgStyle} />
+                        <div className="char__name">{item.name}</div>
+                    </li>
+                </CSSTransition>
             )
         });
         // А эта конструкция вынесена для центровки спиннера/ошибки
         return (
-            <ul className="char__grid">
+            <TransitionGroup className="char__grid" component='ul'>
                 {items}
-            </ul>
+            </TransitionGroup>
         )
     }
 
-    render() {
-        const { chars, loading, error, offset, newItemLoading, charEnded } = this.state;
-
-        const items = this.renderItems(chars);
-
-        const errorMessage = error ? <ErrorMessage /> : null;
-        const spinner = loading ? <Spinner /> : null;
-        const content = !(loading || error) ? items : null;
-
-        return (
-            <div className="char__list">
-                {errorMessage}
-                {spinner}
-                {content}
-
-                <button
-                    className="button button__main button__long"
-                    disabled={newItemLoading}
-                    style={{ 'display': charEnded ? 'none' : 'block' }}
-                    onClick={() => this.onRequest(offset)}>
-                    <div className="inner">{newItemLoading ? <Spinner width='100%' height="18px" /> : 'load more'}</div>
-                </button>
-            </div>
-        )
-    }
+    const elements = useMemo(() => {
+        return setContent(process, () => renderItems(chars), newItemLoading)
+    }, [process])
+    return (
+        <div className="char__list">
+            {elements}
+            <button
+                className="button button__main button__long"
+                disabled={newItemLoading}
+                style={{ 'display': charEnded ? 'none' : 'block' }}
+                onClick={() => onRequest(offset)}>
+                <div className="inner">{newItemLoading ? <Spinner width='100%' height="18px" /> : 'load more'}</div>
+            </button>
+        </div>
+    )
 }
 
 CharList.propTypes = {

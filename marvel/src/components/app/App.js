@@ -1,174 +1,295 @@
-import { Component } from "react";
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+
 
 import AppHeader from "../appHeader/AppHeader";
-import RandomChar from "../randomChar/RandomChar";
-import CharList from "../charList/CharList";
-import CharInfo from "../charInfo/CharInfo";
-import ErrorBoundary from "../errorBoundary/ErrorBoundary";
+import Spinner from '../spinner/Spinner';
 
-import decoration from '../../resources/img/vision.png';
+import SingleChar from '../pages/SingleCharPage';
+import SinglePage from '../pages/SinglePage';
 
+const SingleComic = lazy(() => import('../pages/SingleComicPage'));
+const Page404 = lazy(() => import('../pages/404'));
+const MainPage = lazy(() => import('../pages/MainPage'));
+const ComicsPage = lazy(() => import('../pages/ComicsPage'));
 
-class App extends Component {
-    state = {
-        selectedChar: null
-    }
+//662кб
+//786кб
 
-    onCharSelected = (id) => {
-        this.setState({
-            selectedChar: id
-        })
-    }
-
-    render() {
-        return (
+const App = () => {
+    return (
+        <Router>
             <div className="app" >
                 <AppHeader />
                 <main>
-                    <ErrorBoundary>
-                        <RandomChar />
-                    </ErrorBoundary>
-                    <div className="char__content">
-                        <ErrorBoundary>
-                            <CharList onCharSelected={this.onCharSelected} />
-                        </ErrorBoundary>
-                        <ErrorBoundary>
-                            <CharInfo charId={this.state.selectedChar} />
-                        </ErrorBoundary>
-                    </div>
-                    <img className="bg-decoration" src={decoration} alt="vision" />
+                    <Suspense fallback={<Spinner />}>
+                        <Routes>
+                            <Route element={<MainPage />} path="/" />
+                            <Route element={<ComicsPage />} path="/comics" />
+                            <Route
+                                path="/:id"
+                                element={<SinglePage
+                                    Component={SingleChar}
+                                    dataType='char' />}
+                            />
+                            <Route
+                                path="/comics/:id"
+                                element={<SinglePage
+                                    Component={SingleComic}
+                                    dataType='comic' />}
+                            />
+                            <Route element={<Page404 />} path='*' />
+                        </Routes>
+                    </Suspense>
                 </main>
             </div>
-        )
-    }
+        </Router>
+    )
 }
 
 
 export default App;
 
-// import React, { Component, createRef } from 'react';
-// import { Container } from 'react-bootstrap';
-// // import './App.css';
-
-// class Form extends Component {
-
-//     // myRef = createRef();
-
-//     // componentDidMount() {
-//     //     this.myRef.current.focus();
-//     // }
-
-//     setInputRef = elem => {
-//         this.myRef = elem;
-//     }
-
-//     focusFirstTI = () => {
-//         if (this.myRef) {
-//             this.myRef.focus();
-//         }
-//     }
-
-//     render() {
-//         return (
-//             <Container>
-//                 <form className="w-50 border mt-5 p-3 m-auto">
-//                     <div className="mb-3">
-//                         <label htmlFor="exampleFormControlInput1" className="form-label">Email address</label>
-//                         <input
-//                             ref={this.setInputRef}
-//                             type="email"
-//                             className="form-control"
-//                             id="exampleFormControlInput1"
-//                             placeholder="name@example.com" />
-//                     </div>
-//                     <div className="mb-3">
-//                         <label htmlFor="exampleFormControlTextarea1" className="form-label">Example textarea</label>
-//                         <textarea onClick={this.focusFirstTI} className="form-control" id="exampleFormControlTextarea1" rows="3"></textarea>
-//                     </div>
-//                 </form>
-//             </Container>
-//         )
-//     }
-// }
 
 
-// function App() {
-//     return (
-//         <Form />
-//     );
-// }
+// TODO: Compare HOC and Custom hooks
 
-// export default App;
+const HooksAndHOC = {
+    // import { useState, useEffect, Component } from 'react';
+    // import { Container } from 'react-bootstrap';
+
+    // const withSlider = (BaseComponent, getData) => {
+    //     return (props) => {
+    //         const [slide, setSlide] = useState(0);
+    //         const [autoplay, setAutoplay] = useState(false)
+
+    //         useEffect(() => {
+    //             setSlide(getData());
+    //         }, [])
+
+    //         function changeSlide(i) {
+    //             setSlide(slide => slide + i);
+    //         }
+
+    //         return <BaseComponent
+    //             {...props}
+    //             slide={slide}
+    //             autoplay={autoplay}
+    //             changeSlide={changeSlide}
+    //             setAutoplay={setAutoplay} />
+    //     }
+    // }
+
+    // const getDataFromFirstFetch = () => { return 10 };
+    // const getDataFromSecondFetch = () => { return 20 };
+
+    // const SliderFirst = (props) => {
+    //     return (
+    //         <Container>
+    //             <div className="slider w-50 m-auto">
+    //                 <img className="d-block w-100" src="https://www.planetware.com/wpimages/2020/02/france-in-pictures-beautiful-places-to-photograph-eiffel-tower.jpg" alt="slide" />
+    //                 <div className="text-center mt-5">Active slide {props.slide}</div>
+    //                 <div className="buttons mt-3">
+    //                     <button
+    //                         className="btn btn-primary me-2"
+    //                         onClick={() => props.changeSlide(-1)}>-1</button>
+    //                     <button
+    //                         className="btn btn-primary me-2"
+    //                         onClick={() => props.changeSlide(1)}>+1</button>
+    //                 </div>
+    //             </div>
+    //         </Container>
+    //     )
+    // }
+    // //HOC - Higher order component
+
+    // const SliderSecond = (props) => {
+    //     return (
+    //         <Container>
+    //             <div className="slider w-50 m-auto">
+    //                 <img className="d-block w-100" src="https://www.planetware.com/wpimages/2020/02/france-in-pictures-beautiful-places-to-photograph-eiffel-tower.jpg" alt="slide" />
+    //                 <div className="text-center mt-5">Active slide {props.slide} <br />{props.autoplay ? 'auto' : null} </div>
+    //                 <div className="buttons mt-3">
+    //                     <button
+    //                         className="btn btn-primary me-2"
+    //                         onClick={() => props.changeSlide(-1)}>-1</button>
+    //                     <button
+    //                         className="btn btn-primary me-2"
+    //                         onClick={() => props.changeSlide(1)}>+1</button>
+    //                     <button
+    //                         className="btn btn-primary me-2"
+    //                         onClick={() => props.setAutoplay(autoplay => !autoplay)}>toggle autoplay</button>
+    //                 </div>
+    //             </div>
+    //         </Container>
+    //     )
+    // }
+
+    // const SliderWithFirstFetch = withSlider(SliderFirst, getDataFromFirstFetch);
+    // const SliderWithSecondFetch = withSlider(SliderSecond, getDataFromSecondFetch);
+
+    // const withLogger = WrappedComponent => props => {
+    //     useEffect(() => {
+    //         console.log('first render!');
+    //     }, []);
+
+    //     return <WrappedComponent {...props} />
+    // }
+
+
+    // const Hello = () => {
+    //     return (
+    //         <h1>Hello</h1>
+    //     )
+    // }
+
+    // const HelloWithLogger = withLogger(Hello);
+
+    // function App() {
+    //     return (
+    //         <>
+    //             <HelloWithLogger />
+    //             <SliderWithFirstFetch />
+    //             <SliderWithSecondFetch />
+    //         </>
+    //     );
+    // }
+
+    // export default App;
+
+
+    //?СРАВНЕНИЕ Кастомных хуков, HOC'OB и reducer'a 
+
+    // import { useState, useEffect, Component, useReducer } from 'react';
+    // import { Container } from 'react-bootstrap';
+    // import './App.css';
 
 
 
-// import React, { Component } from 'react';
-// import ReactDOM from 'react-dom';
-// import { Container } from 'react-bootstrap';
-// // import './App.css';
+    // //!CUSTOM HOOk!!!
 
-// class Form extends Component {
+    // function useCounter(initial) {
+    //     const [counter, setCounter] = useState(initial);
 
-//     handleClick = () => {
-//         console.log('click');
-//     }
+    //     const incCounter = () => {
+    //         if (counter < 50) {
+    //             setCounter(counter => counter + 1)
+    //         }
+    //     }
 
-//     render() {
-//         return (
-//             <Container>
-//                 <form onClick={this.handleClick} className="w-50 border mt-5 p-3 m-auto"
-//                     style={{
-//                         'overflow': 'hidden',
-//                         'position': 'relative'
-//                     }}>
-//                     <div className="mb-3">
-//                         <label htmlFor="exampleFormControlInput1" className="form-label">Email address</label>
-//                         <input type="email" className="form-control" id="exampleFormControlInput1" placeholder="name@example.com" />
-//                     </div>
-//                     <div className="mb-3">
-//                         <label htmlFor="exampleFormControlTextarea1" className="form-label">Example textarea</label>
-//                         <textarea className="form-control" id="exampleFormControlTextarea1" rows="3"></textarea>
-//                     </div>
-//                     <Portal>
-//                         <Msg />
-//                     </Portal>
-//                 </form>
-//             </Container>
-//         )
-//     }
-// }
+    //     const decCounter = () => {
+    //         if (counter > -50) {
+    //             setCounter(counter => counter - 1)
+    //         }
+    //     }
 
-// const Portal = (props) => {
-//     const node = document.createElement('div');
-//     document.body.appendChild(node);
+    //     const rndCounter = () => {
+    //         setCounter(+(Math.random() * (50 - -50) + -50).toFixed(0))
+    //     }
 
-//     return ReactDOM.createPortal(props.children, node);
+    //     const resetCounter = () => {
+    //         setCounter(initial)
+    //     }
 
-// }
+    //     return {
+    //         counter,
+    //         incCounter,
+    //         decCounter,
+    //         rndCounter,
+    //         resetCounter
+    //     }
+    // }
+
+    // const Counter = (props) => {
+    //     const { counter, incCounter, decCounter, rndCounter, resetCounter } = useCounter(props.counter);
+
+    //     return (
+    //         <div className="component">
+    //             <div className="counter">{counter}</div>
+    //             <div className="controls">
+    //                 <button onClick={incCounter}>INC</button>
+    //                 <button onClick={decCounter}>DEC</button>
+    //                 <button onClick={rndCounter}>RND</button>
+    //                 <button onClick={resetCounter}>RESET</button>
+    //             </div>
+    //         </div>
+    //     )
+    // }
+
+    // const RndCounter = (props) => {
+    //     const { counter, rndCounter, resetCounter } = useCounter(props.counter);
+
+    //     return (
+    //         <div className="component">
+    //             <div className="counter">{counter}</div>
+    //             <div className="controls">
+    //                 <button onClick={rndCounter}>RND</button>
+    //                 <button onClick={resetCounter}>RESET</button>
+    //             </div>
+    //         </div>
+    //     )
+    // }
+
+    // //!REDUCER !!!
+
+    // // function reducer(state, action) {
+    // //     const { counter } = state;
+    // //     switch (action.type) {
+    // //         case 'incCounter':
+    // //             return { counter: counter + 1 }
+    // //         case 'decCounter':
+    // //             return { counter: counter - 1 }
+    // //         case 'rndCounter':
+    // //             return { counter: +(Math.random() * (50 - -50) + -50).toFixed(0) }
+    // //         case 'resetCounter':
+    // //             return { counter: action.payload }
+
+    // //         default:
+    // //             break;
+    // //     }
+    // // }
 
 
-// const Msg = () => {
-//     return (
-//         <div
-//             style={{
-//                 'width': '500px',
-//                 'height': '150px',
-//                 'backgroundColor': 'red',
-//                 'position': 'absolute',
-//                 'right': '0',
-//                 'bottom': '0'
-//             }}>
-//             Hello
-//         </div>
-//     )
-// }
+    // // const Counter = (props) => {
+    // //     const [{ counter }, dispatch] = useReducer(reducer, { counter: props.counter });
 
-// function App() {
-//     return (
-//         <Form />
-//     );
-// }
+    // //     return (
+    // //         <div className="component">
+    // //             <div className="counter">{counter}</div>
+    // //             <div className="controls">
+    // //                 <button onClick={() => dispatch({ type: 'incCounter' })}>INC</button>
+    // //                 <button onClick={() => dispatch({ type: 'decCounter' })}>DEC</button>
+    // //                 <button onClick={() => dispatch({ type: 'rndCounter' })}>RND</button>
+    // //                 <button onClick={() => dispatch({ type: 'resetCounter', payload: props.counter })}>RESET</button>
+    // //             </div>
+    // //         </div>
+    // //     )
+    // // }
 
-// export default App;
+    // // const RndCounter = (props) => {
+    // //     const [{ counter }, dispatch] = useReducer(reducer, { counter: props.counter });
 
+    // //     return (
+    // //         <div className="component">
+    // //             <div className="counter">{counter}</div>
+    // //             <div className="controls">
+    // //                 <button onClick={() => dispatch({ type: 'rndCounter' })}>RND</button>
+    // //                 <button onClick={() => dispatch({ type: 'resetCounter', payload: props.counter })}>RESET</button>
+    // //             </div>
+    // //         </div>
+    // //     )
+    // // }
 
+    // //!DEFAULT !!!
+
+    // const App = () => {
+    //     return (
+    //         <>
+    //             <Counter counter={0} />
+    //             <RndCounter counter={5} />
+    //         </>
+    //     )
+    // }
+
+    // export default App;
+}
